@@ -54,16 +54,7 @@ class Blockchain {
 
   // Add new block
   async addBlock(newBlock) {
-    let height;
-    await this.getBlockHeight()
-      .then(data => {
-        // console.log("height", data);
-        height = data;
-      })
-      .catch(err => {
-        console.log(err);
-      });
-
+    let height = await this.getBlockHeight();
     if (!height) {
       await addDataToLevelDB(
         new Block("First block in the chain - Genesis block")
@@ -74,13 +65,8 @@ class Blockchain {
         .getTime()
         .toString()
         .slice(0, -3);
-      await this.getBlock(height)
-        .then(data => {
-          newBlock.previousBlockHash = data.hash;
-        })
-        .catch(err => {
-          console.log(err);
-        });
+      let data = await this.getBlock(height);
+      newBlock.previousBlockHash = data.hash;
       newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
       await addDataToLevelDB(newBlock);
     }
@@ -169,8 +155,3 @@ let blockchain = new Blockchain();
   }
   console.log("Done!");
 })([0, 1, 2, 3, 4]);
-
-// (async function getHeight() {
-//   let height = await blockchain.getBlockHeight();
-//   console.log("height", height);
-// })();
