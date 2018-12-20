@@ -26,10 +26,6 @@ class Block {
 |  ================================================*/
 
 class Blockchain {
-  constructor() {
-    // addDataToLevelDB(new Block("First block in the chain - Genesis block"));
-  }
-
   // Add new block
   async addBlock(data) {
     let height = await this.getBlockHeight();
