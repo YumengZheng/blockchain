@@ -65,8 +65,8 @@ class Blockchain {
         .getTime()
         .toString()
         .slice(0, -3);
-      let data = await this.getBlock(height);
-      newBlock.previousBlockHash = data.hash;
+      let lastBlock = await this.getBlock(height);
+      newBlock.previousBlockHash = lastBlock.hash;
       newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
       await addDataToLevelDB(newBlock);
     }
