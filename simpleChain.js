@@ -31,24 +31,23 @@ class Blockchain {
   }
 
   // Add new block
-  async addBlock(newBlock) {
+  async addBlock(data) {
     let height = await this.getBlockHeight();
+    let newBlock;
     if (!height) {
-      await this.addLevelDBData(
-        0,
-        new Block("First block in the chain - Genesis block")
-      );
+      newBlock = new Block("First block in the chain - Genesis block");
     } else {
-      newBlock.height = height;
-      newBlock.time = new Date()
-        .getTime()
-        .toString()
-        .slice(0, -3);
+      newBlock = new Block(data);
       let lastBlock = await this.getBlock(height - 1);
       newBlock.previousBlockHash = lastBlock.hash;
-      newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-      await this.addLevelDBData(height, newBlock);
     }
+    newBlock.height = height;
+    newBlock.time = new Date()
+      .getTime()
+      .toString()
+      .slice(0, -3);
+    newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+    await this.addLevelDBData(height, newBlock);
   }
 
   addLevelDBData(key, value) {
@@ -98,7 +97,6 @@ class Blockchain {
     // generate block hash
     let validBlockHash = SHA256(JSON.stringify(block)).toString();
     // Compare
-    console.log("blockHash", blockHash, "validBlockHash", validBlockHash);
     if (blockHash === validBlockHash) {
       return true;
     } else {
@@ -120,7 +118,7 @@ class Blockchain {
     let height = await this.getBlockHeight();
     for (var i = 0; i < height - 1; i++) {
       // validate block
-      if (!this.validateBlock(i)) errorLog.push(i);
+      if (!(await this.validateBlock(i))) errorLog.push(i);
       // compare blocks hash link
       let block = await this.getBlock(i);
       let blockHash = block.hash;
@@ -140,10 +138,11 @@ class Blockchain {
 }
 
 let blockchain = new Blockchain();
-(async function processArray(array) {
-  for (const i of array) {
-    await blockchain.addBlock(new Block("test data " + i));
-  }
-  console.log("Done!");
-})([0, 1, 2, 3, 4]);
-// blockchain.validateChain();
+// (async function processArray(array) {
+//   for (const i of array) {
+//     await blockchain.addBlock("test data " + i);
+//   }
+//   console.log("Done!");
+// })([0, 1, 2, 3, 4]);
+
+blockchain.validateChain();
