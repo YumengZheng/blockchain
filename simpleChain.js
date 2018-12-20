@@ -7,28 +7,6 @@ const level = require("level");
 const chainDB = "./chaindata";
 const db = level(chainDB, { valueEncoding: "json" });
 
-function addLevelDBData(key, value) {
-  db.put(key, value, function(err) {
-    if (err) return console.log("Block " + key + " submission failed", err);
-    console.log(key, value);
-  });
-}
-
-function addDataToLevelDB(value) {
-  let i = 0;
-  db.createReadStream()
-    .on("data", function(data) {
-      i++;
-    })
-    .on("error", function(err) {
-      return console.log("Unable to read data stream!", err);
-    })
-    .on("close", function() {
-      console.log("Block #" + i);
-      addLevelDBData(i, value);
-    });
-}
-
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
 |  ===============================================*/
@@ -56,7 +34,8 @@ class Blockchain {
   async addBlock(newBlock) {
     let height = await this.getBlockHeight();
     if (!height) {
-      await addDataToLevelDB(
+      await this.addLevelDBData(
+        0,
         new Block("First block in the chain - Genesis block")
       );
     } else {
@@ -65,11 +44,20 @@ class Blockchain {
         .getTime()
         .toString()
         .slice(0, -3);
-      let lastBlock = await this.getBlock(height);
+      let lastBlock = await this.getBlock(height - 1);
       newBlock.previousBlockHash = lastBlock.hash;
       newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-      await addDataToLevelDB(newBlock);
+      await this.addLevelDBData(height, newBlock);
     }
+  }
+
+  addLevelDBData(key, value) {
+    return new Promise(function(resolve) {
+      db.put(key, value, function(err) {
+        if (err) return console.log("Block " + key + " submission failed", err);
+        resolve(console.log(key, value));
+      });
+    });
   }
 
   // Get block height
@@ -100,9 +88,9 @@ class Blockchain {
   }
 
   // validate block
-  validateBlock(blockHeight) {
+  async validateBlock(blockHeight) {
     // get block object
-    let block = this.getBlock(blockHeight);
+    let block = await this.getBlock(blockHeight);
     // get block hash
     let blockHash = block.hash;
     // remove block hash to test block integrity
@@ -110,6 +98,7 @@ class Blockchain {
     // generate block hash
     let validBlockHash = SHA256(JSON.stringify(block)).toString();
     // Compare
+    console.log("blockHash", blockHash, "validBlockHash", validBlockHash);
     if (blockHash === validBlockHash) {
       return true;
     } else {
@@ -126,14 +115,17 @@ class Blockchain {
   }
 
   // Validate blockchain
-  validateChain() {
+  async validateChain() {
     let errorLog = [];
-    for (var i = 0; i < this.chain.length - 1; i++) {
+    let height = await this.getBlockHeight();
+    for (var i = 0; i < height - 1; i++) {
       // validate block
       if (!this.validateBlock(i)) errorLog.push(i);
       // compare blocks hash link
-      let blockHash = this.chain[i].hash;
-      let previousHash = this.chain[i + 1].previousBlockHash;
+      let block = await this.getBlock(i);
+      let blockHash = block.hash;
+      let nextBlock = await this.getBlock(i + 1);
+      let previousHash = nextBlock.previousBlockHash;
       if (blockHash !== previousHash) {
         errorLog.push(i);
       }
@@ -148,10 +140,10 @@ class Blockchain {
 }
 
 let blockchain = new Blockchain();
-
 (async function processArray(array) {
   for (const i of array) {
     await blockchain.addBlock(new Block("test data " + i));
   }
   console.log("Done!");
 })([0, 1, 2, 3, 4]);
+// blockchain.validateChain();
