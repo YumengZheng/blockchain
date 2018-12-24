@@ -136,12 +136,12 @@ class Blockchain {
 }
 
 let blockchain = new Blockchain();
-// (async function processArray(array) {
-//   for (const i of array) {
-//     await blockchain.addBlock(new Block("test data " + i));
-//   }
-//   console.log("Done!");
-// })([0, 1, 2, 3, 4]);
+(async function processArray(array) {
+  for (const i of array) {
+    await blockchain.addBlock(new Block("test data " + i));
+  }
+  console.log("Done!");
+})([0, 1, 2, 3, 4]);
 
 // testcode
 // blockchain.addBlock(new Block("test data fake"));
