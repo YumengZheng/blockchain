@@ -27,13 +27,13 @@ class Block {
 
 class Blockchain {
   // Add new block
-  async addBlock(data) {
+  async addBlock(block) {
     let height = await this.getBlockHeight();
     let newBlock;
     if (!height) {
       newBlock = new Block("First block in the chain - Genesis block");
     } else {
-      newBlock = new Block(data);
+      newBlock = block;
       let lastBlock = await this.getBlock(height - 1);
       newBlock.previousBlockHash = lastBlock.hash;
     }
@@ -43,6 +43,8 @@ class Blockchain {
       .toString()
       .slice(0, -3);
     newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+    // testcode
+    // newBlock.hash = (9471234712398472389476969986967).toString();
     await this.addLevelDBData(height, newBlock);
   }
 
@@ -136,9 +138,12 @@ class Blockchain {
 let blockchain = new Blockchain();
 // (async function processArray(array) {
 //   for (const i of array) {
-//     await blockchain.addBlock("test data " + i);
+//     await blockchain.addBlock(new Block("test data " + i));
 //   }
 //   console.log("Done!");
 // })([0, 1, 2, 3, 4]);
+
+// testcode
+// blockchain.addBlock(new Block("test data fake"));
 
 blockchain.validateChain();
