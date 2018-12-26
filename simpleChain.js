@@ -26,32 +26,64 @@ class Block {
 |  ================================================*/
 
 class Blockchain {
-  // Add new block
-  async addBlock(block) {
-    let height = await this.getBlockHeight();
-    let newBlock;
-    if (!height) {
-      newBlock = new Block("First block in the chain - Genesis block");
-    } else {
-      newBlock = block;
-      let lastBlock = await this.getBlock(height - 1);
-      newBlock.previousBlockHash = lastBlock.hash;
-    }
-    newBlock.height = height;
+  constructor(app) {
+    this.app = app;
+    this.addInitialBlock();
+    this.getBlockByIndex();
+    this.postNewBlock();
+  }
+
+  async addInitialBlock() {
+    let newBlock = new Block("First block in the chain - Genesis block");
+    newBlock.height = 0;
     newBlock.time = new Date()
       .getTime()
       .toString()
       .slice(0, -3);
     newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-    // testcode
-    // newBlock.hash = (9471234712398472389476969986967).toString();
-    await this.addLevelDBData(height, newBlock);
+    newBlock.previousBlockHash = "";
+    await this.addLevelDBData(0, newBlock);
+  }
+
+  postNewBlock() {
+    this.app.post("/api/block", async (req, res) => {
+      let data = req.body.data;
+      let newBlock = new Block(data);
+      let height = await this.getBlockHeight();
+      let lastBlock = await this.getBlock(height - 1);
+      newBlock.previousBlockHash = lastBlock.hash;
+      newBlock.time = new Date()
+        .getTime()
+        .toString()
+        .slice(0, -3);
+      newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+      newBlock.height = height;
+      await this.addLevelDBData(height, newBlock);
+      res.send("saved");
+    });
+  }
+
+  getBlockByIndex() {
+    this.app.get("/api/block/:index", async (req, res) => {
+      let index = req.params.index;
+      await db.get(index, function(err, value) {
+        if (err) {
+          res.send("something went wrong");
+          return console.log("Not found!", err);
+        }
+        let block = value;
+        res.send(block);
+      });
+    });
   }
 
   addLevelDBData(key, value) {
     return new Promise(function(resolve) {
       db.put(key, value, function(err) {
-        if (err) return console.log("Block " + key + " submission failed", err);
+        if (err) {
+          res.send("something went wrong");
+          return console.log("Block " + key + " submission failed", err);
+        }
         resolve(console.log(key, value));
       });
     });
@@ -74,7 +106,6 @@ class Blockchain {
     });
   }
 
-  // get block
   getBlock(blockHeight) {
     return new Promise(resolve => {
       db.get(blockHeight, function(err, value) {
@@ -135,15 +166,6 @@ class Blockchain {
   }
 }
 
-let blockchain = new Blockchain();
-(async function processArray(array) {
-  for (const i of array) {
-    await blockchain.addBlock(new Block("test data " + i));
-  }
-  console.log("Done!");
-})([0, 1, 2, 3, 4]);
-
-// testcode
-// blockchain.addBlock(new Block("test data fake"));
-
-blockchain.validateChain();
+module.exports = app => {
+  return new Blockchain(app);
+};
