@@ -48,18 +48,22 @@ class Blockchain {
   postNewBlock() {
     this.app.post("/api/block", async (req, res) => {
       let data = req.body.data;
-      let newBlock = new Block(data);
-      let height = await this.getBlockHeight();
-      let lastBlock = await this.getBlock(height - 1);
-      newBlock.previousBlockHash = lastBlock.hash;
-      newBlock.time = new Date()
-        .getTime()
-        .toString()
-        .slice(0, -3);
-      newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-      newBlock.height = height;
-      await this.addLevelDBData(height, newBlock);
-      res.send("saved");
+      if (data !== undefined) {
+        let newBlock = new Block(data);
+        let height = await this.getBlockHeight();
+        let lastBlock = await this.getBlock(height - 1);
+        newBlock.previousBlockHash = lastBlock.hash;
+        newBlock.time = new Date()
+          .getTime()
+          .toString()
+          .slice(0, -3);
+        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+        newBlock.height = height;
+        await this.addLevelDBData(height, newBlock);
+        res.send(newBlock);
+      } else {
+        res.send("please provide content");
+      }
     });
   }
 
