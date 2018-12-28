@@ -34,7 +34,7 @@ class Blockchain {
   }
 
   async addInitialBlock() {
-    let newBlock = new Block("First block in the chain - Genesis block");
+    const newBlock = new Block("First block in the chain - Genesis block");
     newBlock.height = 0;
     newBlock.time = new Date()
       .getTime()
@@ -47,11 +47,11 @@ class Blockchain {
 
   postNewBlock() {
     this.app.post("/api/block", async (req, res) => {
-      let data = req.body.data;
+      const data = req.body.data;
       if (data !== undefined) {
-        let newBlock = new Block(data);
-        let height = await this.getBlockHeight();
-        let lastBlock = await this.getBlock(height - 1);
+        const newBlock = new Block(data);
+        const height = await this.getBlockHeight();
+        const lastBlock = await this.getBlock(height - 1);
         newBlock.previousBlockHash = lastBlock.hash;
         newBlock.time = new Date()
           .getTime()
@@ -69,13 +69,13 @@ class Blockchain {
 
   getBlockByIndex() {
     this.app.get("/api/block/:index", async (req, res) => {
-      let index = req.params.index;
+      const index = req.params.index;
       await db.get(index, function(err, value) {
         if (err) {
           res.send("something went wrong");
           return console.log("Not found!", err);
         }
-        let block = value;
+        const block = value;
         res.send(block);
       });
     });
@@ -122,13 +122,13 @@ class Blockchain {
   // validate block
   async validateBlock(blockHeight) {
     // get block object
-    let block = await this.getBlock(blockHeight);
+    const block = await this.getBlock(blockHeight);
     // get block hash
-    let blockHash = block.hash;
+    const blockHash = block.hash;
     // remove block hash to test block integrity
     block.hash = "";
     // generate block hash
-    let validBlockHash = SHA256(JSON.stringify(block)).toString();
+    const validBlockHash = SHA256(JSON.stringify(block)).toString();
     // Compare
     if (blockHash === validBlockHash) {
       return true;
@@ -147,16 +147,16 @@ class Blockchain {
 
   // Validate blockchain
   async validateChain() {
-    let errorLog = [];
-    let height = await this.getBlockHeight();
+    const errorLog = [];
+    const height = await this.getBlockHeight();
     for (var i = 0; i < height - 1; i++) {
       // validate block
       if (!(await this.validateBlock(i))) errorLog.push(i);
       // compare blocks hash link
-      let block = await this.getBlock(i);
-      let blockHash = block.hash;
-      let nextBlock = await this.getBlock(i + 1);
-      let previousHash = nextBlock.previousBlockHash;
+      const block = await this.getBlock(i);
+      const blockHash = block.hash;
+      const nextBlock = await this.getBlock(i + 1);
+      const previousHash = nextBlock.previousBlockHash;
       if (blockHash !== previousHash) {
         errorLog.push(i);
       }
